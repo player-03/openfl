@@ -6,8 +6,6 @@ import openfl.display.Tilemap;
 import openfl.geom.Point;
 
 @:access(openfl.display.Tilemap)
-@:access(openfl.display.TilemapLayer)
-@:access(openfl.display.Tileset)
 
 
 class FlashTilemap {
@@ -16,42 +14,38 @@ class FlashTilemap {
 	public static inline function render (tilemap:Tilemap):Void {
 		
 		#if flash
+		if (tilemap.__tiles.length == 0 || tilemap.tileset == null) return;
+		
 		var bitmapData = tilemap.bitmapData;
 		
 		bitmapData.lock ();
 		bitmapData.fillRect (bitmapData.rect, 0);
 		
-		var sourceBitmapData, tiles, count, tile;
+		var tile;
 		var cacheTileID = -1;
 		var sourceRect = null;
 		var destPoint = new Point ();
 		
-		for (layer in tilemap.__layers) {
+		var sourceBitmapData = tilemap.tileset;
+		
+		var tiles = tilemap.__tiles;
+		var count = tiles.length;
+		
+		for (i in 0...count) {
 			
-			if (layer.__tiles.length == 0 || layer.tileset == null || layer.tileset.bitmapData == null) continue;
+			tile = tiles[i];
 			
-			sourceBitmapData = layer.tileset.bitmapData;
-			
-			tiles = layer.__tiles;
-			count = tiles.length;
-			
-			for (i in 0...count) {
+			if (tile.id != cacheTileID) {
 				
-				tile = tiles[i];
-				
-				if (tile.id != cacheTileID) {
-					
-					sourceRect = layer.tileset.__rects[tile.id];
-					cacheTileID = tile.id;
-					
-				}
-				
-				destPoint.x = tile.x;
-				destPoint.y = tile.y;
-				
-				bitmapData.copyPixels (sourceBitmapData, sourceRect, destPoint, null, null, true);
+				sourceRect = tilemap.__rects[tile.id];
+				cacheTileID = tile.id;
 				
 			}
+			
+			destPoint.x = tile.x;
+			destPoint.y = tile.y;
+			
+			bitmapData.copyPixels (sourceBitmapData, sourceRect, destPoint, null, null, true);
 			
 		}
 		

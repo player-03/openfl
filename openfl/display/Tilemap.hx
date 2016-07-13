@@ -7,6 +7,9 @@ import openfl._internal.renderer.RenderSession;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
 
+import lime.graphics.opengl.GLBuffer;
+import lime.utils.Float32Array;
+
 #if !flash
 import openfl._internal.renderer.canvas.CanvasTilemap;
 import openfl._internal.renderer.opengl.GLTilemap;
@@ -18,18 +21,28 @@ import openfl._internal.renderer.opengl.GLTilemap;
 class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayObject #end {
 	
 	
-	public var numLayers (default, null):Int;
-	
 	#if !flash
 	public var smoothing:Bool;
 	private var __width:Int;
 	private var __height:Int;
 	#end
 	
-	@:noCompletion @:dox(hide) private var __layers:Array<TilemapLayer>;
+	public var tileset:BitmapData;
+	
+	private var __rects:Array<Rectangle>;
+	private var __uvs:Array<Rectangle>;
+	
+	// TODO: Handle dirty flag
+	
+	public var numTiles (default, null):Int;
+	
+	private var __buffer:GLBuffer;
+	private var __bufferData:Float32Array;
+	private var __dirty:Bool;
+	private var __tiles:Array<Tile>;
 	
 	
-	public function new (width:Int, height:Int) {
+	public function new (width:Int, height:Int, tileset:BitmapData) {
 		
 		super ();
 		
@@ -41,46 +54,74 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 		FlashRenderer.register (this);
 		#end
 		
-		__layers = new Array ();
-		numLayers = 0;
+		this.tileset = tileset;
+		
+		__rects = new Array ();
+		__uvs = new Array ();
+		
 		smoothing = true;
 		
-	}
-	
-	
-	public function addLayer (layer:TilemapLayer):TilemapLayer {
-		
-		__layers.push (layer);
-		numLayers++;
-		
-		return layer;
+		__tiles = new Array ();
+		numTiles = 0;
 		
 	}
 	
 	
-	public function addLayerAt (layer:TilemapLayer, index:Int):TilemapLayer {
+	public function addRect (rect:Rectangle):Int {
 		
-		__layers.remove (layer);
-		__layers.insert (index, layer);
-		numLayers = __layers.length;
-		
-		return layer;
+		__rects.push (rect);
+		__uvs.push (new Rectangle (rect.x / tileset.width, rect.y / tileset.height, rect.right / tileset.width, rect.bottom / tileset.height));
+		return __rects.length - 1;
 		
 	}
 	
 	
-	public function contains (layer:TilemapLayer):Bool {
+	public function addTile (tile:Tile):Tile {
 		
-		return (__layers.indexOf (layer) > -1);
+		__tiles.push (tile);
+		__dirty = true;
+		numTiles++;
+		
+		return tile;
 		
 	}
 	
 	
-	public function getLayerAt (index:Int):TilemapLayer {
+	public function addTiles (tiles:Array<Tile>):Array<Tile> {
 		
-		if (index >= 0 && index < numLayers) {
+		__tiles = __tiles.concat (tiles);
+		__dirty = true;
+		numTiles = __tiles.length;
+		
+		return tiles;
+		
+	}
+	
+	
+	public function addTileAt (tile:Tile, index:Int):Tile {
+		
+		__tiles.remove (tile);
+		__tiles.insert (index, tile);
+		__dirty = true;
+		numTiles = __tiles.length;
+		
+		return tile;
+		
+	}
+	
+	
+	public function contains (tile:Tile):Bool {
+		
+		return (__tiles.indexOf (tile) > -1);
+		
+	}
+	
+	
+	public function getTileAt (index:Int):Tile {
+		
+		if (index >= 0 && index < numTiles) {
 			
-			return __layers[index];
+			return __tiles[index];
 			
 		}
 		
@@ -89,11 +130,11 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 	}
 	
 	
-	public function getLayerIndex (layer:TilemapLayer):Int {
+	public function getTileIndex (tile:Tile):Int {
 		
-		for (i in 0...__layers.length) {
+		for (i in 0...__tiles.length) {
 			
-			if (__layers[i] == layer) return i;
+			if (__tiles[i] == tile) return i;
 			
 		}
 		
@@ -102,25 +143,38 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 	}
 	
 	
-	public function removeLayer (layer:TilemapLayer):TilemapLayer {
+	public function removeTile (tile:Tile):Tile {
 		
-		__layers.remove (layer);
-		numLayers = __layers.length;
+		__tiles.remove (tile);
+		__dirty = true;
+		numTiles = __tiles.length;
 		
-		return layer;
+		return tile;
 		
 	}
 	
 	
-	public function removeLayerAt (index:Int):TilemapLayer {
+	public function removeTileAt (index:Int):Tile {
 		
-		if (index >= 0 && index < numLayers) {
+		if (index >= 0 && index < numTiles) {
 			
-			return removeLayer (__layers[index]);
+			return removeTile (__tiles[index]);
 			
 		}
 		
 		return null;
+		
+	}
+	
+	
+	public function removeTiles (beginIndex:Int = 0, endIndex:Int = 0x7fffffff):Void {
+		
+		if (beginIndex < 0) beginIndex = 0;
+		if (endIndex > __tiles.length - 1) endIndex = __tiles.length - 1;
+		
+		__tiles.splice (beginIndex, endIndex - beginIndex + 1);
+		__dirty = true;
+		numTiles = __tiles.length;
 		
 	}
 	

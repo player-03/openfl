@@ -7,8 +7,6 @@ import openfl.display.Tilemap;
 
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.Tilemap)
-@:access(openfl.display.TilemapLayer)
-@:access(openfl.display.Tileset)
 
 
 class CanvasTilemap {
@@ -19,6 +17,8 @@ class CanvasTilemap {
 		#if (js && html5)
 		
 		if (!tilemap.__renderable || tilemap.__worldAlpha <= 0) return;
+		
+		if (tilemap.__tiles.length == 0 || tilemap.tileset == null) return;
 		
 		var context = renderSession.context;
 		
@@ -49,33 +49,26 @@ class CanvasTilemap {
 		var tileRect = null;
 		var cacheTileID = -1;
 		
-		var tiles, count, tile, source, rects;
+		ImageCanvasUtil.convertToCanvas (tilemap.tileset.image);
+		var source = tilemap.tileset.image.src;
 		
-		for (layer in tilemap.__layers) {
+		var tile;
+		var tiles = tilemap.__tiles;
+		var count = tiles.length;
+		var rects = tilemap.__rects;
+		
+		for (i in 0...count) {
 			
-			if (layer.__tiles.length == 0 || layer.tileset == null || layer.tileset.bitmapData == null) continue;
+			tile = tiles[i];
 			
-			ImageCanvasUtil.convertToCanvas (layer.tileset.bitmapData.image);
-			source = layer.tileset.bitmapData.image.src;
-			
-			tiles = layer.__tiles;
-			count = tiles.length;
-			rects = layer.tileset.__rects;
-			
-			for (i in 0...count) {
+			if (tile.id != cacheTileID) {
 				
-				tile = tiles[i];
-				
-				if (tile.id != cacheTileID) {
-					
-					tileRect = rects[tile.id];
-					cacheTileID = tile.id;
-					
-				}
-				
-				context.drawImage (source, tileRect.x, tileRect.y, tileRect.width, tileRect.height, tile.x, tile.y, tileRect.width, tileRect.height);
+				tileRect = rects[tile.id];
+				cacheTileID = tile.id;
 				
 			}
+			
+			context.drawImage (source, tileRect.x, tileRect.y, tileRect.width, tileRect.height, tile.x, tile.y, tileRect.width, tileRect.height);
 			
 		}
 		
