@@ -5,6 +5,7 @@ import lime.graphics.utils.ImageCanvasUtil;
 import openfl._internal.renderer.RenderSession;
 import openfl.display.Tilemap;
 
+@:access(lime.graphics.ImageBuffer)
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.Tilemap)
 
@@ -16,9 +17,7 @@ class CanvasTilemap {
 		
 		#if (js && html5)
 		
-		if (!tilemap.__renderable || tilemap.__worldAlpha <= 0) return;
-		
-		if (tilemap.__tiles.length == 0 || tilemap.tileset == null) return;
+		if (!tilemap.__renderable || tilemap.__tiles.length == 0 || tilemap.__worldAlpha <= 0) return;
 		
 		var context = renderSession.context;
 		
@@ -46,29 +45,37 @@ class CanvasTilemap {
 			
 		}
 		
-		var tileRect = null;
-		var cacheTileID = -1;
+		var cacheBitmapData = null;
+		var source = null;
 		
-		ImageCanvasUtil.convertToCanvas (tilemap.tileset.image);
-		var source = tilemap.tileset.image.src;
+		var tile, tileData, bitmapData;
 		
-		var tile;
 		var tiles = tilemap.__tiles;
+		var tileDataArray = tilemap.__tileData;
 		var count = tiles.length;
-		var rects = tilemap.__rects;
 		
 		for (i in 0...count) {
 			
 			tile = tiles[i];
+			tileData = tileDataArray[tile.id];
+			bitmapData = tileData.bitmapData;
 			
-			if (tile.id != cacheTileID) {
+			if (bitmapData == null) continue;
+			
+			if (bitmapData != cacheBitmapData) {
 				
-				tileRect = rects[tile.id];
-				cacheTileID = tile.id;
+				if (tileData.bitmapData.image.buffer.__srcImage == null) {
+					
+					ImageCanvasUtil.convertToCanvas (tileData.bitmapData.image);
+					
+				}
+				
+				source = bitmapData.image.src;
+				cacheBitmapData = tileData.bitmapData;
 				
 			}
 			
-			context.drawImage (source, tileRect.x, tileRect.y, tileRect.width, tileRect.height, tile.x, tile.y, tileRect.width, tileRect.height);
+			context.drawImage (source, tileData.x, tileData.y, tileData.width, tileData.height, tile.x, tile.y, tileData.width, tileData.height);
 			
 		}
 		

@@ -4,6 +4,7 @@ package openfl._internal.renderer.flash;
 import openfl.display.BitmapData;
 import openfl.display.Tilemap;
 import openfl.geom.Point;
+import openfl.geom.Rectangle;
 
 @:access(openfl.display.Tilemap)
 
@@ -14,33 +15,31 @@ class FlashTilemap {
 	public static inline function render (tilemap:Tilemap):Void {
 		
 		#if flash
-		if (tilemap.__tiles.length == 0 || tilemap.tileset == null) return;
+		if (tilemap.__tiles.length == 0) return;
 		
 		var bitmapData = tilemap.bitmapData;
 		
 		bitmapData.lock ();
 		bitmapData.fillRect (bitmapData.rect, 0);
 		
-		var tile;
-		var cacheTileID = -1;
-		var sourceRect = null;
+		var tile, tileData, sourceBitmapData;
+		var sourceRect = new Rectangle ();
 		var destPoint = new Point ();
 		
-		var sourceBitmapData = tilemap.tileset;
-		
 		var tiles = tilemap.__tiles;
+		var tileDataArray = tilemap.__tileData;
 		var count = tiles.length;
 		
 		for (i in 0...count) {
 			
 			tile = tiles[i];
+			tileData = tileDataArray[tile.id];
+			sourceBitmapData = tileData.bitmapData;
 			
-			if (tile.id != cacheTileID) {
-				
-				sourceRect = tilemap.__rects[tile.id];
-				cacheTileID = tile.id;
-				
-			}
+			sourceRect.x = tileData.x;
+			sourceRect.y = tileData.y;
+			sourceRect.width = tileData.width;
+			sourceRect.height = tileData.height;
 			
 			destPoint.x = tile.x;
 			destPoint.y = tile.y;

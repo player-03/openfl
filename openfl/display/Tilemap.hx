@@ -29,8 +29,7 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 	
 	public var tileset:BitmapData;
 	
-	private var __rects:Array<Rectangle>;
-	private var __uvs:Array<Rectangle>;
+	private var __tileData:Array<TileData>;
 	
 	// TODO: Handle dirty flag
 	
@@ -42,7 +41,7 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 	private var __tiles:Array<Tile>;
 	
 	
-	public function new (width:Int, height:Int, tileset:BitmapData) {
+	public function new (width:Int, height:Int, ?tileset:BitmapData) {
 		
 		super ();
 		
@@ -56,8 +55,7 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 		
 		this.tileset = tileset;
 		
-		__rects = new Array ();
-		__uvs = new Array ();
+		__tileData = new Array ();
 		
 		smoothing = true;
 		
@@ -67,11 +65,43 @@ class Tilemap extends #if !flash DisplayObject #else Bitmap implements IDisplayO
 	}
 	
 	
-	public function addRect (rect:Rectangle):Int {
+	public function addRect (x:Int, y:Int, width:Int, height:Int):Int {
 		
-		__rects.push (rect);
-		__uvs.push (new Rectangle (rect.x / tileset.width, rect.y / tileset.height, rect.right / tileset.width, rect.bottom / tileset.height));
-		return __rects.length - 1;
+		return addTileData (new TileData (x, y, width, height));
+		
+	}
+	
+	
+	public function addBitmapData (bitmapData:BitmapData):Int {
+		
+		return addTileData (new TileData (bitmapData, 0, 0, bitmapData.width, bitmapData.height));
+		
+	}
+	
+	
+	public function addTileData (data:TileData):Int {
+		
+		if (data.bitmapData == null) {
+			
+			data.bitmapData = tileset;
+			
+		}
+		
+		__tileData.push (data);
+		return __tileData.length - 1;
+		
+	}
+	
+	
+	public function getTileDataAt (index:Int):TileData {
+		
+		if (index >= 0 && index < __tileData.length) {
+			
+			return __tileData[index];
+			
+		}
+		
+		return null;
 		
 	}
 	

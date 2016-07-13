@@ -16,8 +16,8 @@ class Tile {
 	public var x (get, set):Float;
 	public var y (get, set):Float;
 	
-	private var __dirtyTranform:Bool = true;
-	private var __dirtyUV:Bool = true;
+	private var __transformDirty:Bool = true;
+	private var __uvsDirty:Bool = true;
 	
 	private var __transform:Array<Float> = [];
 	
@@ -62,7 +62,7 @@ class Tile {
 		matrix.b = rotationSine * __scaleX;
 		matrix.c = -rotationSine * __scaleY;
 		matrix.d = rotationCosine * __scaleY;
-		__dirtyTranform = true;
+		__transformDirty = true;
 		
 		return value;
 		
@@ -105,7 +105,7 @@ class Tile {
 			
 		}
 		
-		__dirtyTranform = true;
+		__transformDirty = true;
 		
 		return value;
 		
@@ -148,7 +148,7 @@ class Tile {
 			
 		}
 		
-		__dirtyTranform = true;
+		__transformDirty = true;
 		
 		return value;
 		
@@ -171,7 +171,7 @@ class Tile {
 	
 	private inline function set_x (value:Float):Float {
 		
-		__dirtyTranform = true;
+		__transformDirty = true;
 		return matrix.tx = value;
 		
 	}
@@ -179,7 +179,7 @@ class Tile {
 	
 	private inline function set_y (value:Float):Float {
 		
-		__dirtyTranform = true;
+		__transformDirty = true;
 		return matrix.ty = value;
 		
 	}
@@ -187,7 +187,7 @@ class Tile {
 	
 	private inline function set_id (value:Int):Int {
 		
-		__dirtyUV = true;
+		__uvsDirty = true;
 		return id = value;
 		
 	}
