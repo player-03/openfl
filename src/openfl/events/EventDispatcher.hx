@@ -243,6 +243,17 @@ class EventDispatcher implements IEventDispatcher
 	**/
 	public function dispatchEvent(event:Event):Bool
 	{
+		if (event.__dispatching)
+		{
+			// if the event is already dispatching, it may still need to be
+			// passed to more of the original listeners. to redispatch without
+			// affecting the state of the event object that is passed those
+			// remaining original listeners, we need to create a clone that has
+			// its own distinct state.
+			event = event.clone();
+		}
+		event.__dispatching = true;
+
 		if (__targetDispatcher != null)
 		{
 			event.target = __targetDispatcher;
@@ -252,7 +263,9 @@ class EventDispatcher implements IEventDispatcher
 			event.target = this;
 		}
 
-		return __dispatchEvent(event);
+		var result = __dispatchEvent(event);
+		event.__dispatching = false;
+		return result;
 	}
 
 	/**

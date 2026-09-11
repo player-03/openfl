@@ -13,6 +13,7 @@ import openfl.geom.Point;
 import utest.Assert;
 import utest.Test;
 
+@:access(openfl.events.Event)
 class DisplayObjectContainerTest extends Test
 {
 	public function test_addChild()
@@ -1769,6 +1770,106 @@ class DisplayObjectContainerTest extends Test
 		Assert.equals(0, sprite.swapChildrenCallCount);
 		Assert.equals(0, sprite.swapChildrenAtCallCount);
 		Assert.equals(1, sprite.containsCallCount);
+	}
+
+	// there's a similar test for EventDispatcher
+	// this one also covers bubbling
+	public function test_redispatchEventFromListener()
+	{
+		var eventType = "myCustomEvent";
+
+		var event1a:Event = null;
+		var event1b:Event = null;
+		var event1c:Event = null;
+		var event2a:Event = null;
+		var event2b:Event = null;
+		var container1 = new Sprite();
+		var container2 = new Sprite();
+		var dispatcher1 = new Sprite();
+		container1.addChild(dispatcher1);
+		var dispatcher2 = new Sprite();
+		container2.addChild(dispatcher2);
+		dispatcher1.addEventListener(eventType, function(event:Event):Void
+		{
+			event1a = event;
+			// set these flags because they need to be cleared when redispatched
+			event1a.preventDefault();
+			event1a.stopPropagation();
+			dispatcher2.dispatchEvent(event1a);
+		});
+		dispatcher1.addEventListener(eventType, function(event:Event):Void
+		{
+			event1b = event;
+			Assert.equals(event1a, event1b);
+			Assert.notNull(event2a);
+			Assert.notEquals(event2a, event1b);
+
+			// this listener is called after the redispatch
+			// make sure that no properties were affected by the redispatch
+			Assert.equals(eventType, event1b.type);
+			Assert.equals(dispatcher1, event1b.target);
+			Assert.equals(dispatcher1, event1b.currentTarget);
+			Assert.equals(EventPhase.AT_TARGET, event1b.eventPhase);
+			Assert.isTrue(event1b.bubbles);
+			Assert.isTrue(event1b.cancelable);
+			Assert.isTrue(event1b.isDefaultPrevented());
+			#if !flash
+			Assert.isTrue(event1b.__isCanceled);
+			#end
+		});
+		container1.addEventListener(eventType, function(event:Event):Void
+		{
+			event1c = event;
+		});
+		dispatcher2.addEventListener(eventType, function(event:Event):Void
+		{
+			event2a = event;
+
+			Assert.notEquals(event1a, event2a);
+			Assert.isNull(event1b);
+			Assert.isNull(event2b);
+
+			Assert.equals(eventType, event2a.type);
+			Assert.equals(dispatcher2, event2a.target);
+			Assert.equals(dispatcher2, event2a.currentTarget);
+			Assert.equals(EventPhase.AT_TARGET, event2a.eventPhase);
+			Assert.isTrue(event2a.bubbles);
+			Assert.isTrue(event2a.cancelable);
+			Assert.isFalse(event2a.isDefaultPrevented());
+			#if !flash
+			Assert.isFalse(event2a.__isCanceled);
+			#end
+		});
+		container2.addEventListener(eventType, function(event:Event):Void
+		{
+			event2b = event;
+
+			Assert.notEquals(event1a, event2b);
+			Assert.isNull(event1b);
+			Assert.equals(event2a, event2b);
+
+			Assert.equals(eventType, event2b.type);
+			Assert.equals(dispatcher2, event2b.target);
+			Assert.equals(container2, event2b.currentTarget);
+			Assert.equals(EventPhase.BUBBLING_PHASE, event2b.eventPhase);
+			Assert.isTrue(event2b.bubbles);
+			Assert.isTrue(event2b.cancelable);
+			Assert.isFalse(event2b.isDefaultPrevented());
+			#if !flash
+			Assert.isFalse(event2b.__isCanceled);
+			#end
+		});
+		var event = new Event(eventType, true, true);
+		var result = dispatcher1.dispatchEvent(event);
+		// the original dispatch is cancelled, so expect false
+		// the redispatch is not cancelled, and should not affect the first
+		Assert.isFalse(result);
+
+		Assert.notNull(event1a);
+		Assert.notNull(event1b);
+		Assert.isNull(event1c); // stopped propagation
+		Assert.notNull(event2a);
+		Assert.notNull(event2b);
 	}
 }
 

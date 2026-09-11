@@ -750,6 +750,7 @@ class Event
 	@:noCompletion private static var __pool:ObjectPool<Event> = new ObjectPool<Event>(function() return new Event(null), function(event) event.__init());
 	#end
 
+	@:noCompletion private var __dispatching:Bool;
 	@:noCompletion private var __isCanceled:Bool;
 	@:noCompletion private var __isCanceledNow:Bool;
 	@:noCompletion private var __preventDefault:Bool;
@@ -774,6 +775,7 @@ class Event
 		__isCanceled = false;
 		__isCanceledNow = false;
 		__preventDefault = false;
+		__dispatching = false;
 	}
 
 	/**
@@ -963,6 +965,7 @@ class Event
 		__isCanceled = false;
 		__isCanceledNow = false;
 		__preventDefault = false;
+		__dispatching = false;
 	}
 }
 #else
